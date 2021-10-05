@@ -45,9 +45,9 @@ export const Wallet: FC = () => {
     ], [network]);
 
     return (
-        <ConnectionProvider endpoint={endpoint}>
-            <WalletProvider wallets={wallets} autoConnect>
-                <WalletModalProvider>
+       //ConnectionProvider endpoint={endpoint}>
+            //<WalletProvider wallets={wallets} autoConnect>
+                //<WalletModalProvider>
                     <ThemeConsumer key="">
                         {(theme) => (
                             <Styled.Card>
@@ -63,8 +63,8 @@ export const Wallet: FC = () => {
                             </Styled.Card>
                         )}
                     </ThemeConsumer>
-                </WalletModalProvider>
-            </WalletProvider>
-        </ConnectionProvider>
+    //             </WalletModalProvider>
+    //         </WalletProvider>
+    //     </ConnectionProvider>
     );
 };

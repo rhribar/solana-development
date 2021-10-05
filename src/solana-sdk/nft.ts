@@ -10,11 +10,9 @@ export interface NFTAccount {
     }   
 }
 
-export async function getNFTsByPublicKey(connection: Connection, publicKeyStr: string): Promise<NFTAccount[]> {
-    console.log("Loading NFTs from", publicKeyStr)
-    const pk = new PublicKey(publicKeyStr);
-
-    let accounts = await Metadata.findByOwnerV2(connection, pk);
+export async function getNFTsByPublicKey(connection: Connection, publicKey: PublicKey): Promise<NFTAccount[]> {
+    console.log("Loading NFTs owned by", publicKey.toString())
+    let accounts = await Metadata.findByOwnerV2(connection, publicKey);
 
     return Promise.all(accounts.map(async (account: Metadata) => ({ pubkey: account.pubkey, metaData: await loadNFTData(account.data.data.uri)})))
 }
