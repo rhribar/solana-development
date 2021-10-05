@@ -1,26 +1,25 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import { GlobalStyles, darkTheme } from '@globalid/design-system';
+import { ThemeProvider } from 'styled-components';
+import * as Styled from './index.styled';
+import { Wallet, Trading, Navbar } from './components'
 
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
-}
+const App = () => (
+  <ThemeProvider theme={darkTheme}>
+    <GlobalStyles />
+    <Styled.GlobalStyles>
+      <Styled.HeaderLayout>
+        <Navbar />
+      </Styled.HeaderLayout>
+      <Styled.WalletLayout>
+        <Wallet/>
+      </Styled.WalletLayout>
+      <body>
+      <Styled.TradingLayout>
+        <Trading />
+      </Styled.TradingLayout>
+      </body>
+    </Styled.GlobalStyles>
+  </ThemeProvider>
+);
 
 export default App;
