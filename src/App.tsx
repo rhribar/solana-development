@@ -9,17 +9,17 @@ const App = () => (
     <GlobalStyles />
     <Styled.GlobalStyles>
         <SolWeb3Wrapper>
-      <Styled.HeaderLayout>
-        <Navbar />
-      </Styled.HeaderLayout>
-      <Styled.WalletLayout>
-        <Wallet/>
-      </Styled.WalletLayout>
-      <body>
-      <Styled.TradingLayout>
-          <Trading />
-      </Styled.TradingLayout>
-      </body>
+          <Styled.HeaderLayout>
+            <Navbar />
+          </Styled.HeaderLayout>
+          <Styled.WalletLayout>
+            <Wallet/>
+          </Styled.WalletLayout>
+          <body>
+          <Styled.TradingLayout>
+              <Trading />
+          </Styled.TradingLayout>
+          </body>
         </SolWeb3Wrapper>
     </Styled.GlobalStyles>
   </ThemeProvider>

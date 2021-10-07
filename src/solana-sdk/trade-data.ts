@@ -1,6 +1,7 @@
 import { PublicKey } from "@solana/web3.js";
 
-export const TRADE_PROGRAM_ID = "CmXjoSSjqrnHwNuwT6mtKDbXRv3UDCJ4gaFUCcUGZnb4";
+//export const TRADE_PROGRAM_ID = "CmXjoSSjqrnHwNuwT6mtKDbXRv3UDCJ4gaFUCcUGZnb4";
+export const TRADE_PROGRAM_ID = "9eH5NScAD1NUwGJswbwCZvWwDYKhjqV3TvDWphx4TRuz";
 export const TRADE_PROGRAM_PK = new PublicKey(TRADE_PROGRAM_ID);
 
 export const MAX_N_TOKEN_ACCOUNTS = 6;
@@ -169,7 +170,7 @@ export const TRADE_STATE_SCHEMA = new Map<any, any>([
 
 export type Pubkey = string;
 
-export class SwapState{
+export class TradeState {
     key: number;
     maker_pk: Pubkey;
     taker_pk: Pubkey | null;
@@ -214,7 +215,7 @@ export class EscrowTokenAccount {
 
 export const SWAP_STATE_SCHEMA = new Map<any, any>([
     [
-        SwapState,
+        TradeState,
         {
             kind: 'struct',
             fields: [
