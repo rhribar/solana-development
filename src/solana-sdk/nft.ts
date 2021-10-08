@@ -16,30 +16,47 @@ export async function getNFTsByPublicKey(connection: Connection, publicKey: Publ
     console.log("Loading NFTs owned by", publicKey.toString())
     let accounts = await Metadata.findByOwnerV2(connection, publicKey);
 
-    return Promise.all(accounts.map(async (account: Metadata) => ({ pubkey: account.pubkey, metaData: await loadNFTData(account.data.data.uri)})))
+    return Promise.all(accounts.map(getNFTFromMetaData))
 }
 
 async  function loadNFTData(uri: string): Promise<{ image: string, name: string }> {
     return (await axios.get(uri)).data 
 }
 
+async function getNFTFromMetaData(metadata: Metadata): Promise<NFTAccount> {
+    return { pubkey: metadata.pubkey, metaData: await loadNFTData(metadata.data.data.uri)}
+}
+
 export async function getNFTsByEscrowTokens(connection: Connection, escrowTokens: EscrowTokenAccount[]): Promise<NFTAccount[]> {
-    for (let i = 0; i < escrowTokens.length; i++) {
-        const tokenAccount = escrowTokens[i];
-        const tokenAccountPk = new PublicKey(tokenAccount.escrow_token_account)
+    return Promise.all(escrowTokens.map((et) => loadNFTByEscrowToken(connection, et)))
+}
 
+const cache: { [eTokenPk: string]: NFTAccount } = {};
 
-        const parsedAccountInfo = await connection.getParsedAccountInfo(tokenAccountPk, 'confirmed');
-
-        if (!parsedAccountInfo.value || !Buffer.isBuffer(parsedAccountInfo.value)) {
-            throw Error("Could not parse account info")
-        }
-
-        //@ts-ignore
-        getMint(parsedAccountInfo.value)
+async function loadNFTByEscrowToken(connection: Connection, eToken: EscrowTokenAccount): Promise<NFTAccount> {
+    if (cache[eToken.escrow_token_account]) {
+        return cache[eToken.escrow_token_account]
     }
+
+    const parsedAccountInfo = await connection.getParsedAccountInfo(new PublicKey(eToken.escrow_token_account), 'confirmed');
+
+    if (!parsedAccountInfo.value || !Buffer.isBuffer(parsedAccountInfo.value)) {
+        throw Error("Could not parse account info")
+    }
+
+    //@ts-ignore
+    const mint = getMint(parsedAccountInfo.value)
+    const pda = await Metadata.getPDA(mint);
+    const metadata = await Metadata.load(connection, pda);
+
+    const nft = await getNFTFromMetaData(metadata);
+
+    cache[eToken.escrow_token_account] = nft;
+
+    return nft
 }
 
 function getMint(accountInfo:AccountInfo<ParsedAccountData>): PublicKey {
     return accountInfo.data.parsed.info.mint
 }
+

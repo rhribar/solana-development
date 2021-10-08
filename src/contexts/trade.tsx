@@ -4,12 +4,14 @@ import {getNFTsByEscrowTokens, NFTAccount} from "../solana-sdk/nft";
 import {Roles} from "../solana-sdk/trade-data";
 import {createTrade, fetchTradeState} from "../solana-sdk/trade-program";
 import {useConnection, useWallet} from "@solana/wallet-adapter-react";
+import {ThemeContext} from "styled-components";
+import {SendTransactionOptions} from "@solana/wallet-adapter-base";
 
 interface IProgramSDK {
     initTrade: () => void,
 }
 
-export interface TradeContext {
+export interface ITradeContext {
     initialized: boolean
     tradePubkey?: PublicKey
     myOffer: NFTAccount[]
@@ -19,34 +21,42 @@ export interface TradeContext {
     sdk?: IProgramSDK
 }
 
-const TradeContext = createContext<TradeContext>({
+export const TradeContext = createContext<ITradeContext>({
     initialized: false,
     myOffer: [],
     theirOffer: [],
 });
 
+type SendTx = (tx: Transaction, con: Connection, options: SendTransactionOptions) => Promise<string>
+
+// #4JZxUC9yAPmvtKj7wn9n5ZF3pTM3B8w6ZqgpW4iP1Rmg
+
 class ProgramSKD {
     connection: Connection;
     publicKey: PublicKey;
-    constructor(connection: Connection, publicKey: PublicKey, sendTransaction: (tx: Transaction, con: Connection) => Promise<string>) {
+    sendTransaction: SendTx;
+    constructor(connection: Connection, publicKey: PublicKey, sendTransaction: SendTx) {
         this.connection = connection;
         this.publicKey = publicKey;
+        this.sendTransaction = sendTransaction
     }
     async initTrade() {
+        console.log('Initializing trade')
         const tx = new Transaction();
         const signers: Keypair[] = [];
         const tradeKey = await createTrade({ tx, connection: this.connection, publicKey: this.publicKey, signers })
         await this.signTransaction(tx, signers)
-
+        console.log(`Done, trade key ${tradeKey}`);
         return tradeKey
     }
 
-    private signTransaction(tx: Transaction, signers: Keypair[]) {
-
+    private async signTransaction(tx: Transaction, signers: Keypair[]) {
+        const sig = await this.sendTransaction(tx, this.connection, { signers });
+        return this.connection.confirmTransaction(sig, 'confirmed');
     }
 }
 
-export function TradeContextProvider(children: PropsWithChildren<any>) {
+export function TradeContextProvider({ children }: PropsWithChildren<any>) {
     const [ initialized, setInitialized ] = useState(false);
     const [ tradePubkey, setTradePubkey] = useState<PublicKey | undefined>(undefined);
     const [ myOffer, setMyOffer] = useState<NFTAccount[]>([]);
@@ -61,7 +71,6 @@ export function TradeContextProvider(children: PropsWithChildren<any>) {
 
     const programSDK = useMemo(() => {
         if (!publicKey) {
-            console.log("Pk missing")
             return
         }
 
@@ -82,11 +91,28 @@ export function TradeContextProvider(children: PropsWithChildren<any>) {
     }, [programSDK]);
 
     useEffect(() => {
-        if (!tradePubkey) {
-            return
+        const tradeKey = window.location.hash;
+        if (tradeKey) {
+            console.log('Setting pk', tradeKey)
+            setTradePubkey(new PublicKey(tradeKey.substring(1)));
+            setInitialized(true);
         }
 
+    }, [publicKey]);
+
+    useEffect(() => {
+        if (tradePubkey) {
+            window.location.hash = tradePubkey?.toBase58();
+        }
+    }, [tradePubkey])
+
+
+    useEffect(() => {
         (async () => {
+            if (!tradePubkey) {
+                return
+            }
+
             const tradeState = await fetchTradeState(connection, tradePubkey)
 
             let myTokens;

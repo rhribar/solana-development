@@ -10,6 +10,7 @@ import {
     getSolflareWallet, getSolletExtensionWallet, getSolletWallet,
     getTorusWallet
 } from "@solana/wallet-adapter-wallets";
+import { TradeContextProvider } from "../contexts/trade";
 
 export const SolWeb3Wrapper: FC = ({children}: PropsWithChildren<any>) => {
     // Can be set to 'devnet', 'testnet', or 'mainnet-beta'
@@ -37,7 +38,9 @@ export const SolWeb3Wrapper: FC = ({children}: PropsWithChildren<any>) => {
         <ConnectionProvider endpoint={endpoint}>
             <WalletProvider wallets={wallets} autoConnect>
                 <WalletModalProvider>
-                    {children}
+                    <TradeContextProvider>
+                        {children}
+                    </TradeContextProvider>
                 </WalletModalProvider>
             </WalletProvider>
         </ConnectionProvider>
