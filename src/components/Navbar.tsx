@@ -7,10 +7,10 @@ export const Navbar = () => {
 
   return (
       <Styled.Navbar>
-        <Styled.Logo src={logo} alt="logo" />
-        <StyledW.Button>
-          <Button label="Invite Friends" />
-        </StyledW.Button>
+        {/*<Styled.Logo src={logo} alt="logo" />*/}
+        {/*<StyledW.Button>*/}
+        {/*  <Button label="Invite Friends" />*/}
+        {/*</StyledW.Button>*/}
       </Styled.Navbar>
   )
 }

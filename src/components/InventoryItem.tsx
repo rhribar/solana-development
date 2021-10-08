@@ -1,16 +1,24 @@
 import {NFTAccount} from "../solana-sdk/nft";
-import {theme} from "@globalid/design-system";
+import {Button, Card, theme} from "@globalid/design-system";
+import {TradeContext} from "../contexts/trade";
+import * as StyledW from "./Wallet.styled";
 
+import './inventory_item.css'
 
 interface ItemInventoryProps {
     nft: NFTAccount
 }
 
-export const InventoryItem = (props: ItemInventoryProps) => {
+export const InventoryItem = ({ nft }: ItemInventoryProps) => {
     return (
-        <div style={{display: 'inline-block', margin:5 }}className="inventory_item" id={props.nft.pubkey.toString()}>
-            <img style={{ maxHeight: '160px', maxWidth: '160px'}} src={props.nft.metaData.image}/>
-            <h4 style={{ color: theme.color.TEXT_1 }}>{props.nft.metaData.name}</h4>
-        </div>
+
+        <TradeContext.Consumer>
+            {(trade) => (
+                <div className="inventory-item" key={nft.pubkey.toString()} onClick={() => trade.sdk ? trade.sdk.addToken(nft.pubkey) : null}>
+                    <img src={nft.metaData.image}/>
+                    <h4 style={{ color: theme.color.TEXT_1 }}>{nft.metaData.name}</h4>
+                </div>
+            )}
+        </TradeContext.Consumer>
     )
 }

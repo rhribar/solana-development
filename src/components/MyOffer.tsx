@@ -12,6 +12,7 @@ export const MyOfferCard = () => {
 
 
     function getOfferItems(trade: ITradeContext) {
+        console.log('trade', trade)
         const oi = [];
         for (let i = 0; i < 6; i++) {
             oi.push(<OfferItem nft={trade.myOffer[i]} index={i}/>)

@@ -46,6 +46,7 @@ export const InventoryCard: FC = () => {
         {(theme) => (
             <Styled.Card>
                 <Card isHoverable={false}>
+                    { publicKey && !loading ? <Button style={{ display: 'inline' }} label="Refresh" size="small" onClick={() => { setInventory([]); loadInventory();}}/> : null }
                     <div style={{ display: 'flex', alignItems: 'center'}}>
                         <div>
                             <h1 style={{ color: theme.color.TEXT_1, marginTop: '0' }}>Your Inventory</h1>

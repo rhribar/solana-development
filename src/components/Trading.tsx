@@ -1,4 +1,4 @@
-import { InventoryCard, MyOfferCard, HisOfferCard} from '.';
+import { InventoryCard, MyOfferCard, TheirOffer} from '.';
 import * as Styled from './Trading.styled';
 
 export const Trading = () => {
@@ -7,7 +7,7 @@ export const Trading = () => {
             <InventoryCard />
             <Styled.TradingButtons>
                 <MyOfferCard />
-                <HisOfferCard />
+                <TheirOffer />
             </Styled.TradingButtons>
         </Styled.TradingWrapper>
     )

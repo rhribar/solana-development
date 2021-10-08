@@ -14,24 +14,13 @@ import {
     TRADE_STATE_SCHEMA, SWAP_STATE_SCHEMA,
     TradeState, TransferInstructionArgs, TRADE_PROGRAM_PK
 } from "./trade-data";
-import { useWallet } from "@solana/wallet-adapter-react";
 
-// const connection = new Connection("https://api.testnet.solana.com", 'singleGossip');
-//
-//
-//
-// const pk = [94,210,228,150,16,117,10,187,251,151,49,142,140,244,174,208,183,146,156,209,195,163,210,105,73,116,85,156,11,173,237,230,150,188,86,254,187,104,11,11,73,166,113,55,230,191,237,186,229,167,11,160,91,195,114,131,187,68,135,236,126,237,247,7];
-//
-// const pk2 = [93,89,151,126,230,185,244,144,207,118,127,104,24,251,1,83,41,193,20,114,27,233,96,99,38,29,166,119,23,118,154,59,145,133,111,230,162,164,230,160,157,65,125,192,252,19,14,55,212,63,248,40,230,172,213,24,68,195,14,113,122,238,171,122];
-//
-// const makerWallet = Keypair.fromSecretKey(Uint8Array.from(pk));
-// const takerWallet = Keypair.fromSecretKey(Uint8Array.from(pk2))
-
-interface TradeTxContext {
+export interface TradeTxContext {
     tx: Transaction
     connection: Connection,
     publicKey: PublicKey,
-    signers: Keypair[]
+    signers: Keypair[],
+    role: Roles,
 }
 
 export async function createTrade({tx, connection, publicKey, signers}: TradeTxContext): Promise<PublicKey> {
@@ -75,4 +64,97 @@ export async function fetchTradeState(connection: Connection, tradePubkey: Publi
     }
 
     return deserializeUnchecked(SWAP_STATE_SCHEMA, TradeState, account.data as Buffer)
+}
+
+export async function addTokenAccount(
+    { tx, connection, signers, publicKey, role }: TradeTxContext,
+    tradePk: PublicKey,
+    tokenAccountPubkey: PublicKey,
+) {
+    //@ts-expect-error
+    const mintAccountPubkey = new PublicKey((await connection.getParsedAccountInfo(tokenAccountPubkey, 'confirmed')).value!.data.parsed.info.mint);
+
+    const tempTokenAccount = new Keypair();
+    const createTempTokenAccountIx = SystemProgram.createAccount({
+        programId: TOKEN_PROGRAM_ID,
+        space: AccountLayout.span,
+        lamports: await connection.getMinimumBalanceForRentExemption(AccountLayout.span, 'singleGossip'),
+        fromPubkey: publicKey,
+        newAccountPubkey: tempTokenAccount.publicKey
+    });
+
+    tx.add(createTempTokenAccountIx);
+    signers.push(tempTokenAccount);
+
+    const initTempAccountIx = Token.createInitAccountInstruction(TOKEN_PROGRAM_ID, mintAccountPubkey, tempTokenAccount.publicKey, publicKey);
+    const transferXTokensToTempAccIx = Token.createTransferInstruction(TOKEN_PROGRAM_ID, tokenAccountPubkey, tempTokenAccount.publicKey, publicKey, [], 1);
+
+    tx.add(initTempAccountIx);
+    tx.add(transferXTokensToTempAccIx);
+
+    const data = Buffer.from(serialize(TRADE_STATE_SCHEMA, new AddTokenAccountArgs({ role })));
+
+    const programId = new PublicKey(TRADE_PROGRAM_ID);
+    const addTokenAccountIx = new TransactionInstruction({
+        programId,
+        keys: [
+            { pubkey: publicKey, isSigner: true, isWritable: false },
+            { pubkey: tradePk, isSigner: false, isWritable: true },
+            { pubkey: tempTokenAccount.publicKey, isSigner: true, isWritable: true },
+            { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
+        ],
+        data
+    })
+
+    tx.add(addTokenAccountIx);
+}
+
+export async function removeTokenAccount(
+    { tx, connection, signers, publicKey, role }: TradeTxContext,
+    tradePk: PublicKey,
+    pdaTokenAccountPubkey: PublicKey,
+) {
+    //@ts-expect-error
+    const mintAccountPubkey = new PublicKey((await connection.getParsedAccountInfo(pdaTokenAccountPubkey, 'confirmed')).value!.data.parsed.info.mint);
+
+    const [returnTokenAddress, _] = await PublicKey.findProgramAddress(
+        [
+            publicKey.toBuffer(),
+            TOKEN_PROGRAM_ID.toBuffer(),
+            mintAccountPubkey.toBuffer()
+        ],
+        ASSOCIATED_TOKEN_PROGRAM_ID
+    )
+
+    const programId = new PublicKey(TRADE_PROGRAM_ID);
+
+    const [pda, _bumpSeed] = await getPda(new PublicKey(tradePk), programId);
+
+    console.log("PDA", pda.toString())
+    console.log("Return Address", returnTokenAddress.toString())
+
+    const removeTokenAccIx = new TransactionInstruction({
+        programId,
+        keys: [
+            { pubkey: publicKey, isSigner: true, isWritable: false },
+            { pubkey: new PublicKey(tradePk), isSigner: false, isWritable: true },
+            { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
+            { pubkey: returnTokenAddress, isSigner: false, isWritable: true },
+            { pubkey: pdaTokenAccountPubkey, isSigner: false, isWritable: true },
+            { pubkey: pda, isSigner: false, isWritable: true }
+        ],
+        data: Buffer.from(serialize(TRADE_STATE_SCHEMA, new RemoveTokenAccountArgs({ role })))
+    })
+
+    tx.add(removeTokenAccIx);
+}
+
+async function getPda(
+    tradeAccountPubkey: PublicKey,
+    programId: PublicKey
+) {
+    return PublicKey.findProgramAddress(
+        [ Buffer.from("twf no monke"), tradeAccountPubkey.toBytes() ],
+        programId,
+    );
 }
