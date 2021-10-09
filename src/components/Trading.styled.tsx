@@ -18,7 +18,7 @@ export const TradingButtons = styled.div`
         margin 0;
     }
 
-    & > :first-child {
+    & > div {
       padding-bottom: ${({ theme }) => theme.space.S24};
     }
 `

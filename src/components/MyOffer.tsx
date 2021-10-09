@@ -37,7 +37,6 @@ export const MyOfferCard = () => {
                                 { publicKey && trade.initialized ? (
                                         <div>
                                             {getOfferItems(trade)}
-                                            <Button label="Confirm" size="small"/>
                                         </div>
                                 ) : null }
                             </div>

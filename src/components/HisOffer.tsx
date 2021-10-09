@@ -29,9 +29,9 @@ export const TheirOffer = () => {
                                 <div style={{ width: '100%' }} >
                                     <h1 style={{ color: theme.color.TEXT_1, marginTop: '0' }}>Their Offer</h1>
                                     <StyledW.Button style={{ display: 'flex', justifyContent: 'space-between', marginTop: theme.space.S8 }}>
-                                        { trade.initialized && !trade.theirPubkey ? <h4 style={{ color: theme.color.TEXT_1, marginTop: '0' }}>No one joined the trade yet</h4> : null }
+                                        { trade.initialized && !trade.theirPubkey ? <h3 style={{ color: theme.color.TEXT_1, marginTop: '0' }}>No one joined the trade yet</h3> : null }
                                     </StyledW.Button>
-                                    { publicKey && trade.initialized ? (
+                                    { publicKey && trade.initialized && trade.theirPubkey ? (
                                         <div>
                                             {getOfferItems(trade)}
                                         </div>

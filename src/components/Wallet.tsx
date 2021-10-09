@@ -53,7 +53,7 @@ export const Wallet: FC = () => {
                             <h1 style={{ color: theme.color.TEXT_1, margin: '0' }}>Connect your wallet: </h1>
                             <Styled.Button>
                                 <WalletMultiButton />
-                                <WalletDisconnectButton style={{ marginLeft: theme.space.S24 }}/>
+                                {/*<WalletDisconnectButton style={{ marginLeft: theme.space.S24 }}/>*/}
                             </Styled.Button>
                         </div>
                     </Card>
