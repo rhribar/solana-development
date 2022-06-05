@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Connection, PublicKey } from '@solana/web3.js';
 import { Program, Provider, web3 } from '@project-serum/anchor';
 import { MintLayout, TOKEN_PROGRAM_ID, Token } from '@solana/spl-token';
@@ -20,6 +20,68 @@ const opts = {
 };
 
 const CandyMachine = ({ walletAddress }) => {
+
+  useEffect(() => {
+    getCandyMachineState();
+  }, []);
+
+  const [candyMachine, setCandyMachine] = useState(null);
+
+  const getProvider = () => {
+    const rpcHost = process.env.REACT_APP_SOLANA_RPC_HOST;
+    const connection = new Connection(rpcHost);
+    const provider = new Provider(connection, window.solana, opts.preflightCommitment)
+    return provider;
+  }
+
+  const getCandyMachineState = async() => {
+    const provider = getProvider();
+    const idl = await Program.fetchIdl(candyMachineProgram, provider); // idl has info that our webapp needs in order to interact with the candy machine
+    const program = new Program(idl, candyMachineProgram, provider); // program allows us to directly interact with the candy machine
+    const candyMachine = await program.account.candyMachine.fetch(process.env.REACT_APP_CANDY_MACHINE_ID); // specifies which candy machine we will retrieve
+    const itemsAvailable = candyMachine.data.itemsAvailable.toNumber();
+    const itemsRedeemed = candyMachine.itemsRedeemed.toNumber();
+    const itemsRemaining = itemsAvailable - itemsRedeemed;
+    const goLiveDate = candyMachine.data.goLiveDate.toNumber();
+    const presale = candyMachine.data.whitelistMintSettings && 
+      candyMachine.data.whitelistMintSettings.presale && 
+      (!candyMachine.data.goLiveDate || 
+        candyMachine.data.goLiveData.toNumber() > new Date().getTime() / 1000);
+    const goLiveDateTimeString = `${new Date(goLiveDate * 1000).toGMTString()}`;
+
+    setCandyMachine({
+      id: process.env.REACT_APP_CANDY_MACHINE_ID,
+      program,
+      state: {
+          itemsAvailable,
+          itemsRedeemed,
+          itemsRemaining,
+          goLiveDate,
+          goLiveDateTimeString,
+          isSoldOut: itemsRemaining === 0,
+          isActive:
+              (presale ||
+                  candyMachine.data.goLiveDate.toNumber() < new Date().getTime() / 1000) &&
+              (candyMachine.endSettings
+                  ? candyMachine.endSettings.endSettingType.date
+                      ? candyMachine.endSettings.number.toNumber() > new Date().getTime() / 1000
+                      : itemsRedeemed < candyMachine.endSettings.number.toNumber()
+                  : true),
+          isPresale: presale,
+          goLiveDate: candyMachine.data.goLiveDate,
+          treasury: candyMachine.wallet,
+          tokenMint: candyMachine.tokenMint,
+          gatekeeper: candyMachine.data.gatekeeper,
+          endSettings: candyMachine.data.endSettings,
+          whitelistMintSettings: candyMachine.data.whitelistMintSettings,
+          hiddenSettings: candyMachine.data.hiddenSettings,
+          price: candyMachine.data.price,
+      },
+  });
+
+    console.log({itemsAvailable, itemsRedeemed, itemsRemaining, goLiveDate, goLiveDateTimeString});
+  }
+
 
   const getCandyMachineCreator = async (candyMachine) => {
     const candyMachineID = new PublicKey(candyMachine);
@@ -87,21 +149,21 @@ const CandyMachine = ({ walletAddress }) => {
   };
 
   const mintToken = async () => {
-    const mint = web3.Keypair.generate();
+    const mint = web3.Keypair.generate(); 
 
     const userTokenAccountAddress = (
       await getAtaForMint(mint.publicKey, walletAddress.publicKey)
-    )[0];
+    )[0]; // create an account
   
     const userPayingAccountAddress = candyMachine.state.tokenMint
       ? (await getAtaForMint(candyMachine.state.tokenMint, walletAddress.publicKey))[0]
-      : walletAddress.publicKey;
+      : walletAddress.publicKey; // parameters we need to provide to mint a nft
   
     const candyMachineAddress = candyMachine.id;
     const remainingAccounts = [];
     const signers = [mint];
     const cleanupInstructions = [];
-    const instructions = [
+    const instructions = [ // instructions for minting
       web3.SystemProgram.createAccount({
         fromPubkey: walletAddress.publicKey,
         newAccountPubkey: mint.publicKey,
@@ -135,7 +197,7 @@ const CandyMachine = ({ walletAddress }) => {
       ),
     ];
   
-    if (candyMachine.state.gatekeeper) {
+    if (candyMachine.state.gatekeeper) { // whether there is a bot
       remainingAccounts.push({
         pubkey: (
           await getNetworkToken(
@@ -163,7 +225,7 @@ const CandyMachine = ({ walletAddress }) => {
         });
       }
     }
-    if (candyMachine.state.whitelistMintSettings) {
+    if (candyMachine.state.whitelistMintSettings) { // whitelist - only specific users can mint new tokens
       const mint = new web3.PublicKey(
         candyMachine.state.whitelistMintSettings.mint,
       );
@@ -216,7 +278,7 @@ const CandyMachine = ({ walletAddress }) => {
       }
     }
   
-    if (candyMachine.state.tokenMint) {
+    if (candyMachine.state.tokenMint) { // we check if the mint is token guided?
       const transferAuthority = web3.Keypair.generate();
   
       signers.push(transferAuthority);
@@ -257,7 +319,7 @@ const CandyMachine = ({ walletAddress }) => {
       candyMachineAddress,
     );
   
-    instructions.push(
+    instructions.push( // create instructions
       await candyMachine.program.instruction.mintNft(creatorBump, {
         accounts: {
           candyMachine: candyMachineAddress,
@@ -284,7 +346,7 @@ const CandyMachine = ({ walletAddress }) => {
   
     try {
       return (
-        await sendTransactions(
+        await sendTransactions( // execute transactions
           candyMachine.program.provider.connection,
           candyMachine.program.provider.wallet,
           [instructions, cleanupInstructions],
@@ -297,10 +359,10 @@ const CandyMachine = ({ walletAddress }) => {
     return [];
   };
 
-  return (
+  return candyMachine && (
     <div className="machine-container">
-      <p>Drop Date:</p>
-      <p>Items Minted:</p>
+      <p>Drop Date: {candyMachine.state.goLiveDateTimeString}</p>
+      <p>Items Minted: {candyMachine.state.itemsRedeemed} / {candyMachine.state.itemsAvailable}</p>
       <button className="cta-button mint-button" onClick={mintToken}>
         Mint NFT
       </button>
