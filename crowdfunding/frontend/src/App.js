@@ -2,12 +2,12 @@ import './App.css';
 import { useEffect, useState } from 'react';
 import { Connection, PublicKey, clusterApiUrl } from "@solana/web3.js";
 import { Program, AnchorProvider, web3, utils, BN } from "@project-serum/anchor";
-import idl from "./idl.json";
+import idl from "./idl1.json";
 import { Buffer } from 'buffer';
 window.Buffer = Buffer;
 
 const programID = new PublicKey(idl.metadata.address);
-const network = clusterApiUrl("devnet");
+const network = "http://127.0.0.1:8899";
 const opts = {
   preflightCommitment: "processed",
 };

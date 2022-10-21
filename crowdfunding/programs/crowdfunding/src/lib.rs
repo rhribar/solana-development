@@ -1,7 +1,8 @@
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::entrypoint::ProgramResult;
 
-declare_id!("EA1TvB22QjPZEtUdr7nz3cfv7YPUpgk4jmjQxmg2bKd4");
+// declare_id!("EA1TvB22QjPZEtUdr7nz3cfv7YPUpgk4jmjQxmg2bKd4");
+declare_id!("Gfav6SNgJ3fMr35MH1kKux9v2WdGiMtWt1k2LuaAyWpY");
 
 #[program]
 pub mod crowdfunding {
@@ -22,6 +23,7 @@ pub mod crowdfunding {
         if campaign.admin != *user.key { // the withdraw id needs to be the adming of the campaign
             return Err(ProgramError::IncorrectProgramId);
         }
+        msg!("withdrawn on the chain");
         let rent_balance = Rent::get()?.minimum_balance(campaign.to_account_info().data_len());
         if **campaign.to_account_info().lamports.borrow() - rent_balance < amount { // if number of lamports in the account is less than the required amount (without the rent)
             return Err(ProgramError::InsufficientFunds);
@@ -37,6 +39,7 @@ pub mod crowdfunding {
             &ctx.accounts.campaign.key(),
             amount
         );
+        msg!("donated on the chain");
         anchor_lang::solana_program::program::invoke(
             &ix,
             &[
