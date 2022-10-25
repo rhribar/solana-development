@@ -65,6 +65,7 @@ pub mod non_custodial_escrow {
             ctx.accounts.escrow.y_amount,
         )?;
         Ok(())
+    }
 
     pub fn cancel(ctx: Context<Cancel>) -> Result<()> {
         // return seller's x_token back to him/her
@@ -91,7 +92,8 @@ pub mod non_custodial_escrow {
             },
             &[&["escrow".as_bytes(), ctx.accounts.seller.key().as_ref(), &[ctx.accounts.escrow.bump]]],
         ))?;
-    Ok(())
+        Ok(())
+    }
 }
 
 #[derive(Accounts)]
